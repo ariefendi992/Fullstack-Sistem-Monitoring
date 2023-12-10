@@ -1,13 +1,14 @@
 from enum import Enum
+from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel
 from sqlalchemy import Boolean
 
 
-class RoleEnum(str, Enum):
-    admin = "admin"
-    guru = "guru"
-    siswa = "siswa"
+class EnumRole(str, Enum):
+    admin: str = "admin"
+    guru: str = "guru"
+    siswa: str = "siswa"
 
 
 class UserBase(BaseModel):
@@ -16,12 +17,14 @@ class UserBase(BaseModel):
 
 
 class UserCreateSchm(UserBase):
-    ...
+    full_name: str
+    role: EnumRole
+    is_active: bool = True
 
 
 class UserOutSchm(BaseModel):
     id: int
-    uuid: UUID
+    uuid: Optional[UUID]
     username: str
     full_name: str
     role: str
