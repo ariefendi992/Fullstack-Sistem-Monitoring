@@ -1,5 +1,7 @@
 # Fullstack-Sistem-Monitoring
 
-- Membuat sebuah **backend** menggunakan **Python FastAPI**, termasuk dokumentasi API interaktif.
+- Membuat sebuah **Backend** menggunakan **Python FastAPI**, termasuk dokumentasi API interaktif.
 
-* Membuat sebuah aplikasi **mobile** mengguanakan **Flutter**, dengan memanfaatkan API dari sisi **backend**
+* Membuat sebuah aplikasi **Mobile** mengguanakan **Flutter**, dengan memanfaatkan API dari sisi **Backend**.
+
+
