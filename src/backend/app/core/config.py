@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # APP
     SECRET_KEY: str
     PROJECT_NAME: str
+    API_V1_STR: str = "/api/v1"
 
     # MySQL
     DB_USER: str
