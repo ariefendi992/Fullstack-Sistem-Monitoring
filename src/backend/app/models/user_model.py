@@ -8,7 +8,7 @@ class UserModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     uuid = Column(UUID, nullable=False, default=uuid4)
     username = Column(String(32), nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String(512), nullable=False)
     full_name = Column(String(64), nullable=False)
     role = Column(Enum("admin", "guru", "siswa"), nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
