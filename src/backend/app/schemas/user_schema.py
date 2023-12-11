@@ -1,10 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Dict, Optional
 from uuid import UUID
-from fastapi import Depends
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
-from sqlalchemy import Boolean
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, validator
 
 from app.core.dependencies import date_to_str, datetime_to_str
 
@@ -31,7 +29,7 @@ class UserInDBSchm(UserBase):
 
 
 class UserOutSchm(BaseModel):
-    uuid: Optional[UUID]
+    uuid: Annotated[UUID, Field(serialization_alias="user_id")]
     username: str
     full_name: str
     role: str
