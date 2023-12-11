@@ -24,8 +24,12 @@ class UserCreateSchm(UserBase):
     is_active: bool = True
 
 
-class UserInDBSchm(UserBase):
-    id: int
+class UserUpdateSchm(UserBase):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    full_name: Optional[str] = None
+    role: Optional[EnumRole] = None
+    is_active: Optional[bool] = None
 
 
 class UserOutSchm(BaseModel):
