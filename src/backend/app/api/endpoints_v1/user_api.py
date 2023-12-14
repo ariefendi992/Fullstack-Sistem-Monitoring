@@ -1,16 +1,27 @@
-from typing import Annotated, List
+from typing import List
 from uuid import UUID
-from pydantic import Field
 from sqlalchemy import Select, select
-from fastapi import APIRouter, Body, HTTPException, Path, Query
-from app.core.dependencies import SessionDepends, gen_password_hash
+from fastapi import APIRouter, Body, Depends, HTTPException, Path
+from app.core.dependencies import (
+    CurrentUser,
+    SessionDepends,
+    get_active_admin,
+    get_current_user,
+    get_jwt_identity,
+)
 from app.models.user_model import UserModel
 from app.schemas.user_schema import UserCreateSchm, UserOutSchm, UserUpdateSchm
+from app.core.security import gen_password_hash
 
 router = APIRouter()
 
 
-@router.post("/", response_model=UserOutSchm, summary="Create User")
+@router.post(
+    "/",
+    response_model=UserOutSchm,
+    summary="Create User",
+    dependencies=[Depends(get_active_admin)],
+)
 async def create_user(*, db: SessionDepends, user: UserCreateSchm):
     db_stmt = await db.execute(
         Select(UserModel).filter(UserModel.username == user.username)
@@ -36,15 +47,22 @@ async def create_user(*, db: SessionDepends, user: UserCreateSchm):
     return user
 
 
-@router.get("/", response_model=List[UserOutSchm], summary="All Users")
+@router.get(
+    "/",
+    response_model=List[UserOutSchm],
+    summary="All Users",
+    dependencies=[Depends(get_active_admin)],
+)
 async def read_users(*, db: SessionDepends, skip: int = 0, limit: int = 100):
     db_stmt = await db.execute(select(UserModel).offset(skip).limit(limit))
     db_result = db_stmt.scalars()
     return db_result
 
 
-@router.get("/{user_id}", response_model=UserOutSchm)
-async def read_user(*, db: SessionDepends, user_id: UUID = Path(...)):
+@router.get(
+    "/{user_id}", response_model=UserOutSchm, dependencies=[Depends(get_active_admin)]
+)
+async def read_user(*, db: SessionDepends, user_id: UUID):
     db_stmt = await db.execute(select(UserModel).filter(UserModel.uuid == user_id))
     user = db_stmt.scalar()
     if not user:
@@ -53,8 +71,20 @@ async def read_user(*, db: SessionDepends, user_id: UUID = Path(...)):
     return user
 
 
+# @router.get("/me/aku")
+# def read_user_me(db: SessionDepends, current_user: CurrentUser) -> UserOutSchm:
+#     """
+#     Get current user.
+#     """
+#     # return current_user  # type: ignore
+#     return current_user
+
+
 @router.put(
-    "/{user_id}", response_model=UserOutSchm, response_model_exclude={"created_at"}
+    "/{user_id}",
+    response_model=UserOutSchm,
+    response_model_exclude={"created_at"},
+    dependencies=[Depends(get_active_admin)],
 )
 async def update_user(
     *,
@@ -90,3 +120,15 @@ async def update_user(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@router.delete("/{user_id}", dependencies=[Depends(get_active_admin)])
+async def delete_user(*, db: SessionDepends, user_id: UUID):
+    db_stmt = await db.execute(select(UserModel).filter_by(uuid=user_id))
+    user = db_stmt.scalar()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    await db.delete(user)
+    await db.commit()
+    return {"msg": "User is deleted"}
