@@ -7,3 +7,4 @@
 - **Back-end** : FastAPI
 - **Configuraion DB** : Alembic, SQLALchemy (Async), MySQL
 - **Mobile** : Flutter (soon)
+- **Front-End** : React (soon)
