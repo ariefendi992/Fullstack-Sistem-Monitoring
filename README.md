@@ -4,7 +4,7 @@
 - Membuat sebuah aplikasi **Mobile** mengguanakan **Flutter**, dengan memanfaatkan API dari sisi **Backend**.
 - Menggunakan alembic, SQLAlchemy AsyncEngine dengan database MySQL -->
 
-- **Back-end** : FastAPI
 - **Configuraion DB** : Alembic, SQLALchemy (Async), MySQL
+- **Back-end** : FastAPI (ongoing project)
 - **Mobile** : Flutter (soon)
 - **Front-End** : React (soon)
