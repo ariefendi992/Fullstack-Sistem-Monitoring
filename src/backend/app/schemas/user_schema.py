@@ -1,10 +1,10 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Any, Dict, Optional
+from typing import Annotated, Any, Optional
 from uuid import UUID
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, validator
+from pydantic import BaseModel, Field, field_validator
 
-from app.core.dependencies import date_to_str, datetime_to_str
+from app.core.config import date_to_str, datetime_to_str
 
 
 class EnumRole(str, Enum):
@@ -33,12 +33,13 @@ class UserUpdateSchm(UserBase):
 
 
 class UserOutSchm(BaseModel):
-    uuid: Annotated[UUID, Field(serialization_alias="user_id")]
+    uuid: Annotated[UUID | str, Field(serialization_alias="user_id")]
     username: str
     full_name: str
     role: str
     is_active: bool
     created_at: str | datetime
+    # updated_at: str | datetime
     updated_at: str | datetime
 
     @field_validator("created_at")
