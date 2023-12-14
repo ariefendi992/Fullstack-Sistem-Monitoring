@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Any, Optional, Dict
 from pydantic import MySQLDsn, ValidationInfo, field_validator, validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,10 +11,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
-    # APP
+    # APP & SECURITY
     SECRET_KEY: str
     PROJECT_NAME: str
     API_V1_STR: str = "/api/v1"
+    EXPIRE_TIMEDELTA_MINUTE: int = 30
+    # menit * jam * hari = 7 hari
+    REFRESH_EXPIRE_TIMEDETLA_MINUTE: int = 60 * 24 * 7
 
     # MySQL
     DB_USER: str
@@ -40,3 +44,43 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings():
     return Settings()
+
+
+WEEKDAYLIST: list[str] = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
+MONTHLIST: list[str] = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+]
+
+
+# Date convertion to String
+def date_to_str(datetime: datetime):
+    hari = WEEKDAYLIST[datetime.weekday()]
+    tgl: int = datetime.day
+    bulan = MONTHLIST[datetime.month - 1]
+    tahun: int = datetime.year
+
+    return f"{hari}-{tgl}-{bulan}-{tahun}"
+
+
+# Date time convertion to String
+def datetime_to_str(datetime: datetime):
+    hari = WEEKDAYLIST[datetime.weekday()]
+    tgl: int = datetime.day
+    bulan = MONTHLIST[datetime.month - 1]
+    tahun: int = datetime.year
+
+    jam = datetime.hour if len(str(datetime.hour)) > 1 else f"0{datetime.hour}"
+    menit = datetime.minute
+    detik = datetime.second
+    return f"{hari}-{tgl}-{bulan}-{tahun} | {jam}:{menit}:{detik}"
