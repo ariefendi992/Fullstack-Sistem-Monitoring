@@ -37,7 +37,7 @@ async def login(
         # "scopes": form_data.scopes if form_data.scopes else [user.role],
     }
     access_token = create_access_token(identity=identity)
-    refresh_token = create_access_token(identity=identity)
+    refresh_token = create_refresh_token(identity=identity)
 
     # NOTE: CHECK USER LOGIN
     query_user_login = await db.execute(
