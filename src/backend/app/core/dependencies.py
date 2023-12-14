@@ -1,10 +1,26 @@
 from datetime import datetime
-from typing import Annotated, Generator
-from fastapi import Depends
+from typing import Annotated, Any, Dict, Generator, Optional
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt, JWTError
 from app.db.engine import engine, Base
 from app.db.engine import SessionLocal
-from werkzeug.security import generate_password_hash, check_password_hash
+from app.core import settings, security
+from app.schemas.token_schema import TokenPayloadSchema
+from app.models.user_model import UserModel
+
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/login",
+    # scopes={
+    #     "admin": "read information admin",
+    #     "guru": "read information guru",
+    #     "siswa": "read information siswa",
+    # },
+)
 
 
 async def get_db() -> Generator:
@@ -18,53 +34,93 @@ async def get_db() -> Generator:
 
 
 SessionDepends = Annotated[AsyncSession, Depends(get_db)]
+TokenDepends = Annotated[str, Depends(oauth2_scheme)]
 
 
-# NOTE: generate password_hash
-def gen_password_hash(password: str) -> Generator:
-    return generate_password_hash(password)
+def get_jwt_identity(token: TokenDepends) -> Optional[Dict[str, Any]]:
+    try:
+        jwt_decode = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
+    except (JWTError, ValidationError):
+        raise HTTPException(status_code=403, detail="Could not validate credential.")
+
+    return jwt_decode.get("identity")
 
 
-# NOTE: check_pasword_hash
-def password_hash_check(password, password_hash):
-    return check_password_hash(pwhash=password_hash, password=password)
+# async def get_current_user(
+#     db: AsyncSession, security_scopes: SecurityScopes, token: TokenDepends
+# ):
+#     if security_scopes.scopes:
+#         authenticate_value = f"Bearer scope={security_scopes.scope_str}"
+#     else:
+#         authenticate_value = "Bearer"
+
+#     credential_exception = HTTPException(
+#         status_code=401,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": authenticate_value},
+#     )
+#     try:
+#         payload = get_jwt_identity(token)
+#         username: str = payload.get("username")
+#         if username is None:
+#             raise credential_exception
+#         token_scopes = payload.get("scopes", [])
+#         token_data = TokenPayloadSchema(scopes=token_scopes, username=username)
+
+#     except (JWTError, ValidationError):
+#         raise credential_exception
+#     db_stmt = await db.execute(
+#         select(UserModel).filter_by(username=token_data.username)
+#     )
+#     user = db_stmt.scalar()
+#     if not user:
+#         raise credential_exception
+#     return user
 
 
-WEEKDAYLIST: list[str] = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
-MONTHLIST: list[str] = [
-    "Januari",
-    "Februari",
-    "Maret",
-    "April",
-    "Mei",
-    "Juni",
-    "Juli",
-    "Agustus",
-    "September",
-    "Oktober",
-    "November",
-    "Desember",
-]
+async def get_current_user(db: SessionDepends, token: TokenDepends):
+    try:
+        payload = get_jwt_identity(token)
+        token_data = TokenPayloadSchema(**payload)
+
+    except (JWTError, token_data.username):
+        raise HTTPException(
+            status_code=403,
+            detail="Could not validate credentials",
+        )
+    query = await db.execute(select(UserModel).filter_by(username=token_data.username))
+    user = query.scalar()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 
-# Date convertion to String
-def date_to_str(datetime: datetime):
-    hari = WEEKDAYLIST[datetime.weekday()]
-    tgl: int = datetime.day
-    bulan = MONTHLIST[datetime.month - 1]
-    tahun: int = datetime.year
-
-    return f"{hari}-{tgl}-{bulan}-{tahun}"
+async def get_current_active_user(
+    get_current_user: Annotated[UserModel, Depends(get_current_user)]
+) -> UserModel:
+    if not get_current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user.")
+    return get_current_user
 
 
-# Date time convertion to String
-def datetime_to_str(datetime: datetime):
-    hari = WEEKDAYLIST[datetime.weekday()]
-    tgl: int = datetime.day
-    bulan = MONTHLIST[datetime.month - 1]
-    tahun: int = datetime.year
+CurrentUser = Annotated[UserModel, Depends(get_current_active_user)]
 
-    jam = datetime.hour if len(str(datetime.hour)) > 1 else f"0{datetime.hour}"
-    menit = datetime.minute
-    detik = datetime.second
-    return f"{hari}-{tgl}-{bulan}-{tahun} | {jam}:{menit}:{detik}"
+
+async def get_active_admin(curret_user: CurrentUser):
+    if not curret_user.role == "admin":
+        raise HTTPException(status_code=400, detail="User doesn't have privilages")
+    return curret_user
+
+
+async def get_active_guru(curret_user: CurrentUser):
+    if not curret_user.role == "guru":
+        raise HTTPException(status_code=400, detail="User doesn't have privilages")
+    return curret_user
+
+
+async def get_active_siswa(curret_user: CurrentUser):
+    if not curret_user.role == "guru":
+        raise HTTPException(status_code=400, detail="User doesn't have privilages")
+    return curret_user
