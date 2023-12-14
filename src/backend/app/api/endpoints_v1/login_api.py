@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
@@ -8,8 +9,9 @@ from app.core.security import (
     create_refresh_token,
     password_hash_check,
 )
-from app.models.user_model import UserModel
+from app.models.user_model import UserLoginModel, UserModel
 from app.schemas import token_schema
+from app.core import settings
 
 
 router = APIRouter()
@@ -36,6 +38,26 @@ async def login(
     }
     access_token = create_access_token(identity=identity)
     refresh_token = create_access_token(identity=identity)
+
+    # NOTE: CHECK USER LOGIN
+    query_user_login = await db.execute(
+        select(UserLoginModel).filter_by(user_id=user.id)
+    )
+    user_login = query_user_login.scalar()
+    if user_login:
+        user_login.refreh_token = refresh_token
+        user_login.counter_login += 1
+        user_login.expire_token = datetime.now() + timedelta(
+            minutes=settings.REFRESH_EXPIRE_TIMEDETLA_MINUTE
+        )
+        await db.commit()
+
+    # NOTE: SET USER LOGIN
+    if not user_login:
+        user_login = UserLoginModel(refrehToken=refresh_token, userID=user.id)
+        db.add(user_login)
+        await db.commit()
+    await db.refresh(user_login)
 
     return {
         "access_token": access_token,
