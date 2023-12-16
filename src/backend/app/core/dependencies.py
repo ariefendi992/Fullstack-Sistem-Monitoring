@@ -121,6 +121,6 @@ async def get_active_guru(curret_user: CurrentUser):
 
 
 async def get_active_siswa(curret_user: CurrentUser):
-    if not curret_user.role == "guru":
+    if not curret_user.role == "siswa":
         raise HTTPException(status_code=400, detail="User doesn't have privilages")
     return curret_user
