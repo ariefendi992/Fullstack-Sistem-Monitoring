@@ -1,50 +1,151 @@
+from datetime import date
 from typing import List
 from uuid import UUID
-from sqlalchemy import Select, select
-from fastapi import APIRouter, Body, Depends, HTTPException, Path
+from sqlalchemy import select
+from fastapi import APIRouter, Body, Depends, HTTPException
 from app.core.dependencies import (
-    CurrentUser,
     SessionDepends,
     get_active_admin,
-    get_current_user,
-    get_jwt_identity,
 )
-from app.models.user_model import UserModel
-from app.schemas.user_schema import UserCreateSchm, UserOutSchm, UserUpdateSchm
+from app.models.user_model import (
+    AgamaEnum,
+    GenderEnum,
+    UserDetailAdmin,
+    UserDetailGuru,
+    UserDetailSiswa,
+    UserModel,
+)
+from app.schemas.user_schema import (
+    CreateAllUserSchema,
+    EnumRole,
+    UserOutSchm,
+    UserUpdateSchm,
+)
 from app.core.security import gen_password_hash
+
 
 router = APIRouter()
 
 
-@router.post(
-    "/",
-    response_model=UserOutSchm,
-    summary="Create User",
-    dependencies=[Depends(get_active_admin)],
-)
-async def create_user(*, db: SessionDepends, user: UserCreateSchm):
-    db_stmt = await db.execute(
-        Select(UserModel).filter(UserModel.username == user.username)
-    )
-    result_user = db_stmt.scalar()
-
-    if result_user:
+@router.post("/create-user", status_code=201, dependencies=[Depends(get_active_admin)])
+async def create_user(
+    *,
+    db: SessionDepends,
+    user_create: CreateAllUserSchema = Body(
+        openapi_examples={
+            "admin": {
+                "summary": "A admin create example",
+                "description": "A **admin create** works correctly.",
+                "value": {
+                    "username": "admin_username",
+                    "password": "password",
+                    "full_name": "full name",
+                    "role": EnumRole.admin,
+                    "is_active": True,
+                    "admin": {
+                        "gender": GenderEnum.laki,
+                        "agama": AgamaEnum.islam,
+                        "alamat": "",
+                        "telp": "",
+                    },
+                },
+            },
+            "guru": {
+                "summary": "A guru create example",
+                "description": "",
+                "value": {
+                    "username": "nip",
+                    "password": "password",
+                    "full_name": "full name",
+                    "role": EnumRole.guru,
+                    "is_active": True,
+                    "guru": {
+                        "gender": GenderEnum.laki,
+                        "agama": AgamaEnum.islam,
+                        "alamat": "",
+                        "telp": "",
+                    },
+                },
+            },
+            "siswa": {
+                "summary": "A siswa create example",
+                "description": "",
+                "value": {
+                    "username": "nisn",
+                    "password": "password",
+                    "full_name": "full name",
+                    "role": EnumRole.siswa,
+                    "is_active": True,
+                    "siswa": {
+                        "gender": GenderEnum.laki,
+                        "tempat_lahir": "Makassar",
+                        "tgl_lahir": date.today(),
+                        "agama": AgamaEnum.islam,
+                        "nama_ortu": "",
+                        "alamat": "Jl. ",
+                        "telp": "",
+                        "kelas_id": None,
+                    },
+                },
+            },
+        },
+    ),
+):
+    query = await db.execute(select(UserModel).filter_by(username=user_create.username))
+    user = query.scalar()
+    if user:
         raise HTTPException(
             status_code=409,
-            detail=f"The user with {user.username} is already exists in system.",
+            detail=f"The user with username : {user_create.username} already exists.",
         )
-    password_hash = gen_password_hash(user.password)
-    user = UserModel(
-        username=user.username,
-        hashedPassword=password_hash,
-        fullName=user.full_name,
-        role=user.role,
-        isActive=user.is_active,
-    )
-    db.add(user)
+
+    if user_create.role == EnumRole.admin:
+        user_data = user_create.model_dump(
+            exclude_unset=True, exclude={"admin", "password"}
+        )
+        hash_pswd = gen_password_hash(user_create.password)
+        detail_user = user_create.admin.model_dump(
+            exclude_unset=True, exclude_none=True, exclude_defaults=True
+        )
+        user_in = UserModel(
+            **user_data,
+            hashedPassword=hash_pswd,
+            admin=[UserDetailAdmin(**detail_user)],
+        )
+    if user_create.role == EnumRole.guru:
+        user_data = user_create.model_dump(
+            exclude_unset=True, exclude={"guru", "password"}
+        )
+        hash_pswd = gen_password_hash(user_create.password)
+        detail_user = user_create.guru.model_dump(
+            exclude_unset=True, exclude_none=True, exclude_defaults=True
+        )
+        user_in = UserModel(
+            **user_data,
+            hashedPassword=hash_pswd,
+            guru=[UserDetailGuru(**detail_user)],
+        )
+
+    if user_create.role == EnumRole.siswa:
+        user_data = user_create.model_dump(
+            exclude_unset=True, exclude={"siswa", "password"}
+        )
+        hash_pswd = gen_password_hash(user_create.password)
+        detail_user = user_create.siswa.model_dump(
+            exclude_unset=True, exclude_none=True, exclude_defaults=True
+        )
+        # print(f"User Data {user_data}")
+        user_in = UserModel(
+            **user_data,
+            hashedPassword=hash_pswd,
+            siswa=[UserDetailSiswa(**detail_user)],
+        )
+
+    db.add(user_in)
     await db.commit()
-    await db.refresh(user)
-    return user
+    await db.refresh(user_in)
+
+    # return user_in
 
 
 @router.get(
