@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from typing import Optional
 from uuid import uuid4
 from sqlalchemy import (
     UUID,
@@ -15,23 +16,25 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from app.db.engine import Base
 from app.core import settings
+from app.schemas.base_schema import EnumRole
 import enum
 
 
-class RoleEnum(enum.Enum):
+class RoleEnum(str, enum.Enum):
     admin = "admin"
     guru = "guru"
     siwsa = "siswa"
 
 
-class GenderEnum(enum.Enum):
+class GenderEnum(str, enum.Enum):
     laki = "laki-laki"
     perempuan = "perempuan"
 
 
-class AgamaEnum(enum.Enum):
+class AgamaEnum(str, enum.Enum):
     islam = "islam"
     kristen = "kristen"
+    katolik = "katolik"
     hindu = "hindu"
     budha = "budha"
     konghucu = "konghucu"
@@ -50,28 +53,34 @@ class UserModel(Base):
     updated_at = Column(
         DateTime, nullable=False, default=func.now(), onupdate=func.now()
     )
+    login = relationship("UserLoginModel", back_populates="user")
+    admin = relationship("UserDetailAdmin", back_populates="user")
+    guru = relationship("UserDetailGuru", back_populates="user")
+    siswa = relationship("UserDetailSiswa", back_populates="user")
 
     def __init__(
         self,
-        *,
         username: str,
         hashedPassword: str,
-        fullName: str,
-        role: str,
-        isActive: Boolean = True,
+        full_name: str,
+        role: EnumRole,
+        is_active: Boolean = True,
+        admin: Optional["UserDetailAdmin"] = [],
+        guru: Optional["UserDetailGuru"] = [],
+        siswa: Optional["UserDetailSiswa"] = [],
     ):
         self.username = username
         self.hashed_password = hashedPassword
-        self.full_name = fullName
+        self.full_name = full_name
         self.role = role
-        self.is_active = isActive
+        self.is_active = is_active
+        self.admin = admin
+        self.guru = guru
+        self.siswa = siswa
 
     def __repr__(self):
-        data = {
-            "username": self.username,
-            "uuid": self.uuid,
-            "full_name": self.full_name,
-        }
+        data = (f"username : {self.username}",)
+
         return data
 
 
@@ -82,7 +91,7 @@ class UserLoginModel(Base):
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", backref="user_login")
+    user = relationship("UserModel", back_populates="login")
     expire_token = Column(DateTime, nullable=False)
     counter_login = Column(Integer, nullable=False, default=0)
     last_login_at = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -102,25 +111,23 @@ class UserLoginModel(Base):
 class UserDetailAdmin(Base):
     __tablename__ = "tb_detail_admin"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    gender = Column(Enum(GenderEnum), nullable=False)
+    gender = Column(Enum("laki-laki", "perempuan"), nullable=False)
     agama = Column(Enum(AgamaEnum), nullable=True)
     alamat = Column(String(255), nullable=True)
     telp = Column(String(14), nullable=True)
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", backref="user_admin")
+    user = relationship("UserModel", back_populates="admin")
 
     def __init__(
         self,
         *,
-        userID: str | int,
         gender: str,
         agama: str | None = None,
         alamat: str | None = None,
         telp: str | None = None,
     ):
-        self.user_id = (userID,)
         self.gender = gender
         self.agama = agama
         self.alamat = alamat
@@ -137,18 +144,16 @@ class UserDetailGuru(Base):
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", backref="user_guru")
+    user = relationship("UserModel", back_populates="guru")
 
     def __init__(
         self,
         *,
-        userID: int | str,
         gender: str,
         agama: str | None = None,
         alamat: str | None = None,
         telp: str | None = None,
     ):
-        self.user_id = userID
         self.gender = gender
         self.agama = agama
         self.alamat = alamat
@@ -172,33 +177,31 @@ class UserDetailSiswa(Base):
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", backref="user_siswa")
+    user = relationship("UserModel", back_populates="siswa")
 
     def __init__(
         self,
         *,
-        userID: int | str,
         gender: str,
-        tempatLahir: str | None = None,
-        tglLahir: date | None = None,
+        tempat_lahir: str | None = None,
+        tgl_lahir: date | None = None,
         agama: str | None = None,
-        namaOrtu: str | None = None,
+        nama_ortu: str | None = None,
         alamat: str | None = None,
         telp: str | None = None,
-        qrName: str | None = None,
-        photoName: str | None = None,
-        IDCardName: str | None = None,
-        kelasID: int | None = None,
+        qr_name: str | None = None,
+        photo_name: str | None = None,
+        id_card_name: str | None = None,
+        kelas_id: int | None = None,
     ):
-        self.user_id = userID
         self.gender = gender
-        self.tempat_lahir = tempatLahir
-        self.tgl_lahir = tglLahir
+        self.tempat_lahir = tempat_lahir
+        self.tgl_lahir = tgl_lahir
         self.agama = agama
-        self.nama_ortu = namaOrtu
+        self.nama_ortu = nama_ortu
         self.alamat = alamat
         self.telp = telp
-        self.qr_name = qrName
-        self.photo_name = photoName
-        self.idcard_name = IDCardName
-        self.kelas_id = kelasID
+        self.qr_name = qr_name
+        self.photo_name = photo_name
+        self.idcard_name = id_card_name
+        self.kelas_id = kelas_id
