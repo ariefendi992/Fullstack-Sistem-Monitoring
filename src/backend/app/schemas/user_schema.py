@@ -1,26 +1,22 @@
 from datetime import datetime
-from enum import Enum
 from typing import Annotated, Any, Optional
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
-
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.core.config import date_to_str, datetime_to_str
-
-
-class EnumRole(str, Enum):
-    admin: str = "admin"
-    guru: str = "guru"
-    siswa: str = "siswa"
+from app.schemas.base_schema import EnumRole
+from app.schemas.admin_schema import AdminCreateSchm
+from app.schemas.guru_schema import GuruCreateSchema
+from app.schemas.siswa_schema import SiswaCreateSchema
 
 
 class UserBase(BaseModel):
     username: str
-    password: str = Field(..., exclude=True)
+    password: str
 
 
 class UserCreateSchm(UserBase):
     full_name: str
-    role: EnumRole
+    role: EnumRole | None = None
     is_active: bool = True
 
 
@@ -53,3 +49,28 @@ class UserOutSchm(BaseModel):
     def assemble_datetime_str(cls, v: Any):
         if isinstance(v, datetime):
             return f"{datetime_to_str(v)}"
+
+
+class UserSchema(UserBase):
+    id: int
+    admin: list[Any] = []
+
+
+class CreateUserAdminSchema(UserBase):
+    full_name: str = Field(default="John Doe")
+    role: EnumRole
+    is_active: bool
+    admin: AdminCreateSchm | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CreateAllUserSchema(UserBase):
+    full_name: str = Field(default="John Doe")
+    role: EnumRole
+    is_active: bool
+    admin: Optional[AdminCreateSchm] = None
+    guru: Optional[GuruCreateSchema] = None
+    siswa: Optional[SiswaCreateSchema] = None
+
+    model_config = ConfigDict(from_attributes=True)

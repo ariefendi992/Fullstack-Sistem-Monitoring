@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
-
 from app.core.dependencies import SessionDepends
 from app.core.security import (
     create_access_token,
@@ -37,7 +36,7 @@ async def login(
         # "scopes": form_data.scopes if form_data.scopes else [user.role],
     }
     access_token = create_access_token(identity=identity)
-    refresh_token = create_access_token(identity=identity)
+    refresh_token = create_refresh_token(identity=identity)
 
     # NOTE: CHECK USER LOGIN
     query_user_login = await db.execute(
