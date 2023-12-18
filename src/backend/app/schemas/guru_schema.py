@@ -12,3 +12,11 @@ class GuruBase(BaseModel):
 
 class GuruCreateSchema(GuruBase):
     ...
+
+
+class GuruUpdateSchema(GuruBase):
+    ...
+
+
+class GuruOutSchema(GuruBase):
+    ...
