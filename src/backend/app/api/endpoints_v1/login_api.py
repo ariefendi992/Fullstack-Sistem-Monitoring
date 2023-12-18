@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
-from app.core.dependencies import SessionDepends
+from app.core.dependencies import CurrentUser, SessionDepends
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -11,6 +11,7 @@ from app.core.security import (
 from app.models.user_model import UserLoginModel, UserModel
 from app.schemas import token_schema
 from app.core import settings
+from app.schemas.user_schema import UserOutSchm
 
 
 router = APIRouter()
@@ -63,3 +64,11 @@ async def login(
         "refresh_token": refresh_token,
         "token_type": "bearer",
     }
+
+
+@router.get("/me", response_model_exclude_unset=True, response_model_exclude_none=True)
+def get_current_user(*, db: SessionDepends, current_user: CurrentUser) -> UserOutSchm:
+    """
+    **Get Current User**
+    """
+    return current_user
