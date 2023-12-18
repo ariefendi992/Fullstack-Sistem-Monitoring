@@ -4,9 +4,13 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.core.config import date_to_str, datetime_to_str
 from app.schemas.base_schema import EnumRole
-from app.schemas.admin_schema import AdminCreateSchm
-from app.schemas.guru_schema import GuruCreateSchema
-from app.schemas.siswa_schema import SiswaCreateSchema
+from app.schemas.admin_schema import AdminCreateSchm, AdminOutSchema, AdminUpdateSchm
+from app.schemas.guru_schema import GuruCreateSchema, GuruOutSchema, GuruUpdateSchema
+from app.schemas.siswa_schema import (
+    SiswaCreateSchema,
+    SiswaOutSchema,
+    UpdateSiswaSchema,
+)
 
 
 class UserBase(BaseModel):
@@ -20,14 +24,6 @@ class UserCreateSchm(UserBase):
     is_active: bool = True
 
 
-class UserUpdateSchm(UserBase):
-    username: Optional[str] = None
-    password: Optional[str] = None
-    full_name: Optional[str] = None
-    role: Optional[EnumRole] = None
-    is_active: Optional[bool] = None
-
-
 class UserOutSchm(BaseModel):
     uuid: Annotated[UUID | str, Field(serialization_alias="user_id")]
     username: str
@@ -35,8 +31,10 @@ class UserOutSchm(BaseModel):
     role: str
     is_active: bool
     created_at: str | datetime
-    # updated_at: str | datetime
     updated_at: str | datetime
+    admin: Optional[AdminOutSchema] = None
+    guru: Optional[GuruOutSchema] = None
+    siswa: Optional[SiswaOutSchema] = None
 
     @field_validator("created_at")
     @classmethod
@@ -49,6 +47,8 @@ class UserOutSchm(BaseModel):
     def assemble_datetime_str(cls, v: Any):
         if isinstance(v, datetime):
             return f"{datetime_to_str(v)}"
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserSchema(UserBase):
@@ -72,5 +72,18 @@ class CreateAllUserSchema(UserBase):
     admin: Optional[AdminCreateSchm] = None
     guru: Optional[GuruCreateSchema] = None
     siswa: Optional[SiswaCreateSchema] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UpdateUserSchema(UserBase):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    full_name: Optional[str] = None
+    role: Optional[EnumRole] = None
+    is_active: Optional[bool] = None
+    admin: Optional[AdminUpdateSchm] = None
+    guru: Optional[GuruUpdateSchema] = None
+    siswa: Optional[UpdateSiswaSchema] = None
 
     model_config = ConfigDict(from_attributes=True)

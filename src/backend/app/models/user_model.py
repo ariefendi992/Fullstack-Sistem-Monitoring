@@ -13,9 +13,10 @@ from sqlalchemy import (
     String,
     func,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 from app.db.engine import Base
 from app.core import settings
+from app.models.datum_model import KelasModel
 from app.schemas.base_schema import EnumRole
 import enum
 
@@ -53,10 +54,18 @@ class UserModel(Base):
     updated_at = Column(
         DateTime, nullable=False, default=func.now(), onupdate=func.now()
     )
-    login = relationship("UserLoginModel", back_populates="user")
-    admin = relationship("UserDetailAdmin", back_populates="user")
-    guru = relationship("UserDetailGuru", back_populates="user")
-    siswa = relationship("UserDetailSiswa", back_populates="user")
+    login: Mapped["UserLoginModel"] = relationship(
+        "UserLoginModel", back_populates="user", lazy="selectin"
+    )
+    admin: Mapped["UserDetailAdmin"] = relationship(
+        "UserDetailAdmin", back_populates="user", lazy="selectin"
+    )
+    guru: Mapped["UserDetailGuru"] = relationship(
+        "UserDetailGuru", back_populates="user", lazy="subquery"
+    )
+    siswa: Mapped["UserDetailSiswa"] = relationship(
+        "UserDetailSiswa", back_populates="user", lazy="selectin"
+    )
 
     def __init__(
         self,
@@ -91,10 +100,10 @@ class UserLoginModel(Base):
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", back_populates="login")
     expire_token = Column(DateTime, nullable=False)
     counter_login = Column(Integer, nullable=False, default=0)
     last_login_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    user = relationship("UserModel", back_populates="login", lazy="selectin")
 
     def __init__(self, *, refrehToken, userID, expireDelta: timedelta | None = None):
         self.refreh_token = refrehToken
@@ -173,11 +182,16 @@ class UserDetailSiswa(Base):
     qr_name = Column(String(255), nullable=True)
     photo_name = Column(String(255), nullable=True)
     idcard_name = Column(String(255), nullable=True)
-    kelas_id = Column(Integer, nullable=True)
+    kelas_id = Column(
+        Integer,
+        ForeignKey("tb_datum_kelas.id", onupdate="CASCADE", ondelete="CASCADE"),
+        nullable=True,
+    )
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", back_populates="siswa")
+    kelas: Mapped["KelasModel"] = relationship("KelasModel", back_populates="siswa", lazy='selectin')
+    user = relationship("UserModel", back_populates="siswa", lazy='selectin')
 
     def __init__(
         self,
@@ -191,7 +205,7 @@ class UserDetailSiswa(Base):
         telp: str | None = None,
         qr_name: str | None = None,
         photo_name: str | None = None,
-        id_card_name: str | None = None,
+        idcard_name: str | None = None,
         kelas_id: int | None = None,
     ):
         self.gender = gender
@@ -203,5 +217,5 @@ class UserDetailSiswa(Base):
         self.telp = telp
         self.qr_name = qr_name
         self.photo_name = photo_name
-        self.idcard_name = id_card_name
+        self.idcard_name = idcard_name
         self.kelas_id = kelas_id

@@ -14,9 +14,17 @@ class AdminCreateSchm(AdminBase):
     ...
 
 
+class AdminUpdateSchm(AdminBase):
+    ...
+
+
 class AdminSchema(AdminBase):
     id: int
     user_id: int
 
     class Config:
         from_attributes = True
+
+
+class AdminOutSchema(AdminBase):
+    ...
