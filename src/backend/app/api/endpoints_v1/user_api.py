@@ -259,7 +259,7 @@ async def read_users(
     response_model=UserOutSchm,
     dependencies=[Depends(get_active_admin)],
     response_model_exclude_unset=True,
-    response_model_exclude_defaults=False
+    response_model_exclude_defaults=False,
 )
 async def read_user(*, db: SessionDepends, user_id: UUID):
     db_stmt = await db.execute(select(UserModel).filter(UserModel.uuid == user_id))
@@ -268,6 +268,42 @@ async def read_user(*, db: SessionDepends, user_id: UUID):
         raise HTTPException(status_code=404, detail="User not found.")
 
     data: dict[str, any] = {}
+    if user.role == EnumRole.admin:
+        data.update(
+            {
+                "uuid": user.uuid,
+                "username": user.username,
+                "full_name": user.full_name.title(),
+                "role": user.role,
+                "is_active": user.is_active,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+                "admin": {
+                    "gender": user.admin.gender,
+                    "agama": user.admin.agama,
+                    "alamat": user.admin.alamat,
+                    "telp": user.admin.telp,
+                },
+            }
+        )
+    if user.role == EnumRole.guru:
+        data.update(
+            {
+                "uuid": user.uuid,
+                "username": user.username,
+                "full_name": user.full_name.title(),
+                "role": user.role,
+                "is_active": user.is_active,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+                "guru": {
+                    "gender": user.guru.gender,
+                    "agama": user.guru.agama,
+                    "alamat": user.guru.alamat,
+                    "telp": user.guru.telp,
+                },
+            }
+        )
 
     if user.role == EnumRole.siswa:
         data.update(
@@ -288,7 +324,7 @@ async def read_user(*, db: SessionDepends, user_id: UUID):
                     "alamat": user.siswa.alamat,
                     "telp": user.siswa.telp,
                     "kelas_id": user.siswa.kelas_id,
-                    'kelas': user.siswa.kelas.kelas if user.siswa.kelas_id else None,
+                    "kelas": user.siswa.kelas.kelas if user.siswa.kelas_id else None,
                     "qr_name": user.siswa.qr_name,
                     "photo_name": user.siswa.photo_name,
                     "idcard_name": user.siswa.idcard_name,
