@@ -460,31 +460,6 @@ async def update_user(
     return user
 
 
-# if model.username is not None or model.username != "string" or model.username != "":
-#     user.username = model.username
-# if model.password is not None or model.password != "string" or model.password != "":
-#     pass_hash = gen_password_hash(model.password)
-#     user.hashed_password = pass_hash
-# if (
-#     model.full_name is not None
-#     or model.full_name != "string"
-#     or model.full_name != ""
-# ):
-#     user.full_name = model.full_name
-# if model.role is not None or model.role != "string" or model.role != "":
-#     user.role = model.role
-# if (
-#     model.is_active is not None
-#     or model.is_active != "string"
-#     or model.is_active != ""
-# ):
-#     user.is_active = model.is_active
-
-# await db.commit()
-# await db.refresh(user)
-# return user
-
-
 @router.delete("/{user_id}", dependencies=[Depends(get_active_admin)])
 async def delete_user(*, db: SessionDepends, user_id: UUID):
     db_stmt = await db.execute(select(UserModel).filter_by(uuid=user_id))
@@ -494,4 +469,4 @@ async def delete_user(*, db: SessionDepends, user_id: UUID):
 
     await db.delete(user)
     await db.commit()
-    return {"msg": "User is deleted"}
+    return {"msg": "User has been deleted"}
