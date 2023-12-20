@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
-from app.core.dependencies import CurrentUser, SessionDepends
+from app.core.dependencies import CurrentUser, SessionDepends, get_jwt_identity
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -72,6 +72,11 @@ def get_current_user(*, db: SessionDepends, current_user: CurrentUser) -> UserOu
     **Get Current User**
     """
     return current_user
+
+
+@router.get("/refresh-token")
+async def refresh_token():
+    ...
 
 
 @router.put("/me/update-profile")
