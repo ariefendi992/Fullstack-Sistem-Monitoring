@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.post("/kelas", status_code=201)
-async def crate_kelas(
+async def create_kelas(
     *,
     db: SessionDepends,
     kelas: CreateKelasSchema = Body(..., examples=[{"kelas": "nama kelas"}])

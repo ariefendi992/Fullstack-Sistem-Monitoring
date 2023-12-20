@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from app.core.dependencies import CurrentUser, SessionDepends
@@ -72,3 +72,115 @@ def get_current_user(*, db: SessionDepends, current_user: CurrentUser) -> UserOu
     **Get Current User**
     """
     return current_user
+
+
+@router.put("/me/update-profile")
+async def update_profile_user_login(
+    *,
+    db: SessionDepends,
+    curret_user: CurrentUser,
+    data: dict = Body(
+        ...,
+        openapi_examples={
+            "admin": {
+                "summary": "a admin format example",
+                "description": "",
+                "value": {
+                    "username": "",
+                    "full_name": "",
+                    "gender": "",
+                    "agama": "",
+                    "alamat": "",
+                    "telp": "",
+                },
+            },
+            "guru": {
+                "summary": "a teacher format example",
+                "description": "",
+                "value": {
+                    "username": "",
+                    "full_name": "",
+                    "gender": "",
+                    "agama": "",
+                    "alamat": "",
+                    "telp": "",
+                },
+            },
+            "siswa": {
+                "summary": "a student format example",
+                "description": "",
+                "value": {
+                    "username": "",
+                    "full_name": "",
+                    "gender": "",
+                    "tempat_lahir": "",
+                    "tgl_lahir": "",
+                    "agama": "",
+                    "nama_ortu": "",
+                    "alamat": "",
+                    "telp": "",
+                },
+            },
+        },
+    ),
+):
+    query = await db.execute(select(UserModel).filter_by(username=curret_user.username))
+    user = query.scalar()
+
+    if curret_user.role == "admin":
+        user.username = data.get("username") if data.get("username") else user.username
+        user.full_name = (
+            data.get("full_name") if data.get("full_name") else user.full_name
+        )
+        user.admin.gender = (
+            data.get("gender") if data.get("gender") else user.admin.gender
+        )
+        user.admin.agama = data.get("agama") if data.get("agama") else user.admin.agama
+        user.admin.alamat = (
+            data.get("alamat") if data.get("alamat") else user.admin.alamat
+        )
+        user.admin.telp = data.get("telp") if data.get("telp") else user.admin.telp
+
+    if curret_user.role == "guru":
+        user.username = data.get("username") if data.get("username") else user.username
+        user.full_name = (
+            data.get("full_name") if data.get("full_name") else user.full_name
+        )
+        user.guru.gender = (
+            data.get("gender") if data.get("gender") else user.guru.gender
+        )
+        user.guru.agama = data.get("agama") if data.get("agama") else user.guru.agama
+        user.guru.alamat = (
+            data.get("alamat") if data.get("alamat") else user.guru.alamat
+        )
+        user.guru.telp = data.get("telp") if data.get("telp") else user.guru.telp
+
+    if curret_user.role == "siswa":
+        user.username = data.get("username") if data.get("username") else user.username
+        user.full_name = (
+            data.get("full_name") if data.get("full_name") else user.full_name
+        )
+        user.siswa.gender = (
+            data.get("gender") if data.get("gender") else user.siswa.gender
+        )
+        user.siswa.tempat_lahir = (
+            data.get("tempat_lahir")
+            if data.get("tempat_lahir")
+            else user.siswa.tempat_lahir
+        )
+        user.siswa.tgl_lahir = (
+            data.get("tgl_lahir") if data.get("tgl_lahir") else user.siswa.tgl_lahir
+        )
+        user.siswa.agama = data.get("agama") if data.get("agama") else user.siswa.agama
+        user.siswa.nama_ortu = (
+            data.get("nama_ortu") if data.get("nama_ortu") else user.siswa.nama_ortu
+        )
+        user.siswa.alamat = (
+            data.get("alamat") if data.get("alamat") else user.siswa.alamat
+        )
+        user.siswa.telp = data.get("telp") if data.get("telp") else user.siswa.telp
+
+    await db.commit()
+    await db.refresh(user)
+
+    return {"msg": "upate profile success."}
