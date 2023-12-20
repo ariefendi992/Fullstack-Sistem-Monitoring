@@ -245,6 +245,7 @@ async def read_users(
                         "alamat": user.siswa.alamat,
                         "telp": user.siswa.telp,
                         "kelas_id": user.siswa.kelas_id,
+                        "kelas": user.siswa.kelas.kelas,
                         "qr_name": user.siswa.qr_name,
                         "photo_name": user.siswa.photo_name,
                         "idcard_name": user.siswa.idcard_name,
