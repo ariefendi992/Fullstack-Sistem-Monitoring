@@ -1,13 +1,13 @@
 from datetime import datetime
-from typing import Annotated, Any, Optional, Dict
-from pydantic import MySQLDsn, ValidationInfo, field_validator, validator
+from typing import Optional, List
+from pydantic import AnyHttpUrl, MySQLDsn, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
@@ -18,6 +18,17 @@ class Settings(BaseSettings):
     EXPIRE_TIMEDELTA_MINUTE: int = 30
     # menit * jam * hari = 7 hari
     REFRESH_EXPIRE_TIMEDETLA_MINUTE: int = 60 * 24 * 7
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | List[str]):
+        if isinstance(v, str) and not v.startswith["["]:
+            return [i.strip for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+
+        raise ValueError(v)
 
     # MySQL
     DB_USER: str
