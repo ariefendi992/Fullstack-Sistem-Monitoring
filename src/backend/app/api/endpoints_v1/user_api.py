@@ -33,7 +33,9 @@ class OrdeyBy(str, Enum):
     desc = "desc"
 
 
-@router.post("/create-user", status_code=201, dependencies=[Depends(get_active_admin)])
+@router.post(
+    "/create-user", status_code=201, dependencies=[Depends(get_active_admin())]
+)
 async def create_user(
     *,
     db: SessionDepends,
@@ -116,7 +118,7 @@ async def create_user(
         user_in = UserModel(
             **user_data,
             hashedPassword=hash_pswd,
-            admin=[UserDetailAdmin(**detail_user)],
+            admin=UserDetailAdmin(**detail_user),
         )
     if user_create.role == EnumRole.guru:
         user_data = user_create.model_dump(
@@ -129,7 +131,7 @@ async def create_user(
         user_in = UserModel(
             **user_data,
             hashedPassword=hash_pswd,
-            guru=[UserDetailGuru(**detail_user)],
+            guru=UserDetailGuru(**detail_user),
         )
 
     if user_create.role == EnumRole.siswa:
@@ -144,7 +146,7 @@ async def create_user(
         user_in = UserModel(
             **user_data,
             hashedPassword=hash_pswd,
-            siswa=[UserDetailSiswa(**detail_user)],
+            siswa=UserDetailSiswa(**detail_user),
         )
 
     db.add(user_in)
