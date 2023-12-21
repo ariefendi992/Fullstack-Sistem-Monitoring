@@ -33,9 +33,7 @@ class OrdeyBy(str, Enum):
     desc = "desc"
 
 
-@router.post(
-    "/create-user", status_code=201, dependencies=[Depends(get_active_admin())]
-)
+@router.post("/create-user", status_code=201, dependencies=[Depends(get_active_admin)])
 async def create_user(
     *,
     db: SessionDepends,
