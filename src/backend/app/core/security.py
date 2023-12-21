@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Generator
-from fastapi import HTTPException
-from jose import JWTError, jwt
+from jose import jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.core import settings
 
