@@ -461,6 +461,39 @@ async def update_user(
     return user
 
 
+@router.put("/change-password/{username}", dependencies=[Depends(get_active_admin)])
+async def update_password_user(
+    *,
+    db: SessionDepends,
+    username: str,
+    data: dict = Body(..., examples=[{"password": "", "re_password": ""}]),
+):
+    query = await db.execute(select(UserModel).filter_by(username=username))
+    user = query.scalar()
+
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User with {username} not found.")
+
+    password: str = data.get("password")
+    re_password: str = data.get("re_password")
+
+    if password != re_password:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password not valid! Please check password input or re_password input.",
+        )
+
+    else:
+        hash_pass = gen_password_hash(password)
+
+    user.password = hash_pass
+
+    await db.commit()
+    await db.refresh(user)
+
+    return {"msg": "update pass success."}
+
+
 @router.delete("/{user_id}", dependencies=[Depends(get_active_admin)])
 async def delete_user(*, db: SessionDepends, user_id: UUID):
     db_stmt = await db.execute(select(UserModel).filter_by(uuid=user_id))
