@@ -2,7 +2,6 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 from uuid import uuid4
 from sqlalchemy import (
-    UUID,
     Boolean,
     Column,
     Date,
@@ -44,7 +43,7 @@ class AgamaEnum(str, enum.Enum):
 class UserModel(Base):
     __tablename__ = "tb_users"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(UUID, nullable=False, default=uuid4)
+    uuid = Column(String(36), nullable=False, default=uuid4)
     username = Column(String(32), nullable=False, unique=True)
     hashed_password = Column(String(512), nullable=False)
     full_name = Column(String(64), nullable=False)
@@ -58,10 +57,10 @@ class UserModel(Base):
         "UserLoginModel", back_populates="user", lazy="selectin"
     )
     admin: Mapped["UserDetailAdmin"] = relationship(
-        "UserDetailAdmin", back_populates="user", lazy="selectin"
+        "UserDetailAdmin", backref="user", lazy="selectin"
     )
     guru: Mapped["UserDetailGuru"] = relationship(
-        "UserDetailGuru", back_populates="user", lazy="subquery"
+        "UserDetailGuru", back_populates="user", lazy="selectin"
     )
     siswa: Mapped["UserDetailSiswa"] = relationship(
         "UserDetailSiswa", back_populates="user", lazy="selectin"
@@ -103,7 +102,9 @@ class UserLoginModel(Base):
     expire_token = Column(DateTime, nullable=False)
     counter_login = Column(Integer, nullable=False, default=0)
     last_login_at = Column(DateTime, default=func.now(), onupdate=func.now())
-    user = relationship("UserModel", back_populates="login", lazy="selectin")
+    user: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="login", lazy="selectin"
+    )
 
     def __init__(self, *, refrehToken, userID, expireDelta: timedelta | None = None):
         self.refreh_token = refrehToken
@@ -127,7 +128,9 @@ class UserDetailAdmin(Base):
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", back_populates="admin")
+    user: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="admin", lazy="selectin"
+    )
 
     def __init__(
         self,
@@ -153,7 +156,9 @@ class UserDetailGuru(Base):
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    user = relationship("UserModel", back_populates="guru")
+    user: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="guru", lazy="selectin"
+    )
 
     def __init__(
         self,
@@ -190,8 +195,12 @@ class UserDetailSiswa(Base):
     user_id = Column(
         Integer, ForeignKey("tb_users.id", ondelete="CASCADE", onupdate="CASCADE")
     )
-    kelas: Mapped["KelasModel"] = relationship("KelasModel", back_populates="siswa", lazy='selectin')
-    user = relationship("UserModel", back_populates="siswa", lazy='selectin')
+    kelas: Mapped["KelasModel"] = relationship(
+        "KelasModel", back_populates="siswa", lazy="selectin"
+    )
+    user: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="siswa", lazy="selectin"
+    )
 
     def __init__(
         self,
